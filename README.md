@@ -1,21 +1,16 @@
 # Nostr workshop demo
 Basic demonstration of a Nostr web-socket client embedded in the browser, with links and resources.
 
-Special thanks to [CMDruid](https://github.com/cmdruid) for all his contributions, teaching me about TextEncoder and assisting with the first ever nostr workshop in Austin!
+Demostrates how to create basic FHIR data objects, serialize them into Nostr Notes, and sign and send them to the Nostr network.
 
-## Video
+Also demonstrates how Nostr Notes can be verified without the need of trusted third parties.
 
-[![](https://i.imgur.com/7gLUtRt.png)](https://www.youtube.com/watch?v=HbicnlCXg_Y)
+Special thanks to [CMDruid](https://github.com/cmdruid) and [Super Testnet](https://github.com/illuminodes/nostr-workshop-demo) for the 
+original tutorial this is based off of.
 
-## Slideshow
-
-[https://tinyurl.com/nostr-workshop](https://tinyurl.com/nostr-workshop)
 
 ## How to use
-Open the HTML file using your favorite browser, then check the developer console to see some magic.
-
-Live demo available here:  
-https://supertestnet.github.io/nostr-workshop-demo  
+Open the HTML file using your favorite browser, then check the developer console to see the full output.
 
 ## Resources
 **Nostr Protocol Implementation Proposals (NIPS)**  

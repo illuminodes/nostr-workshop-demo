@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
+    <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
+    <script src="./nostr.js"></script>
+    <script src="./fhir.js"></script>
+    <title>Totally Real Pathology Lab</title>
+</head>
+
+<body>
+    <div id="patients"
+        style="margin: 20px; padding: 20px; border: 1px solid black; border-radius: 10px; display: flex; flex-direction: column;">
+        <h3>Patients:</h3>
+    </div>
+</body>
+
+<script>
+    //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    // Loading the labs private key
+    //////////////////////////////////////////////////////////////////////////
+    var privKey = LAB_PRIV_KEY;
+    var pubKey = getPubKey(privKey);
+    console.log(pubKey);
+    //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    // Open a connection to a relay
+    //////////////////////////////////////////////////////////////////////////
+    var relay = "wss://relay.illuminodes.com";
+    var socket = new WebSocket(relay);
+
+    // Well use this to display the patients that contact us
+    var patientsDiv = document.getElementById('patients');
+
+    //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    // Subscrube to pahtology requests form patients
+    //////////////////////////////////////////////////////////////////////////
+    socket.addEventListener('open', async function (e) {
+        console.log("connected to " + relay);
+
+        var subId = randomSubId();
+        // We will use ephemeral kinds (20000-29999) so relays do not save our data
+        var filter = {"kinds": [20042], "#p": [pubKey]};
+
+        var subscription = ["REQ", subId, filter]
+        console.log('Subscription:', subscription);
+
+        socket.send(JSON.stringify(subscription));
+    });
+    //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    // Handle incoming messages
+    //////////////////////////////////////////////////////////////////////////
+    socket.addEventListener('message', async function (message) {
+        // Lets filter out relay specific events and only handle notes
+        var [type, subId, note] = JSON.parse(message.data);
+        var {kind, content} = note || {}
+        if (!note || note === true) return;
+        console.log('message:', note);
+
+        // Lets make sure the note is of the kind we are interested in
+        if (kind === 20042) {
+            // we unwrap the giftwrapped data 
+            decryptedData = decrypt(privKey, note.pubkey, content);
+            // and parse the note inside
+            fhirSignedData = JSON.parse(decryptedData);
+
+            // we can check the authenticity of the note author and its content
+            var idOk = await verifyNoteId(fhirSignedData);
+            var signatureOk = verifyNoteSignature(fhirSignedData);
+            if (idOk && signatureOk) {
+                console.log('FHIR data:', fhirSignedData);
+                // we can display the data in the patients div
+                let json_data = JSON.parse(fhirSignedData.content);
+                patientsDiv.innerHTML += `${json_data.text.div}`;
+
+                // well generate some totally real lab data and sign it
+                var fhirGlucoseObservation = generateObservation(pubKey, note.pubkey, json_data.name);
+                var observationNote = {
+                    "content": JSON.stringify(fhirGlucoseObservation),
+                    "created_at": Math.floor(Date.now() / 1000),
+                    "kind": 82,
+                    "tags": [],
+                    "pubkey": pubKey,
+                };
+                var signedObservationNote = await getSignedNote(observationNote, privKey);
+                console.log('signedObservationNote:', signedObservationNote);
+
+                // We giftwrap the data for the patient to maintain the patients privacy
+                var observationEncryptedData = encrypt(privKey, note.pubkey, JSON.stringify(signedObservationNote));
+                var giftwrappedObservationNote = {
+                    "content": observationEncryptedData,
+                    "created_at": Math.floor(Date.now() / 1000),
+                    "kind": 20420,
+                    "tags": [["p", note.pubkey]],
+                    "pubkey": pubKey,
+                };
+                var signedGiftwrappedObservationNote = await getSignedNote(giftwrappedObservationNote, privKey);
+                console.log('giftwrappedObservationNote:', signedGiftwrappedObservationNote);
+
+                // And we send the data to the patient
+                socket.send(JSON.stringify(["EVENT", signedGiftwrappedObservationNote]));
+            } else {
+                console.log('Invalid FHIR data:', fhirSignedData);
+            }
+        }
+    });
+</script>
+
+</html>
