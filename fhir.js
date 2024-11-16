@@ -45,7 +45,7 @@ const generateObservation = (id, patientRef, patientDisplay) => {
                 <span style="display: inline-block; margin-left: 10px;">${issuedDate}</span>
                 <span style="display: inline-block; margin-left: 10px;">${effectiveDate}</span>
                 <span style="display: inline-block; margin-left: 10px;">42pupusas</span>
-                <span style="display: inline-block; margin-left: 10px;">${labPublicKey}</span>
+                <span style="display: inline-block; margin-left: 10px;">${LAB_PUB_KEY}</span>
             </p>
 
         </div>`
@@ -65,7 +65,7 @@ const generateObservation = (id, patientRef, patientDisplay) => {
         effectiveDateTime: effectiveDate,
         issued: issuedDate,
         performer: [{
-            reference: labPublicKey,
+            reference: LAB_PUB_KEY,
             display: "42's Totally Real Pathology Lab"
         }],
         valueQuantity: {

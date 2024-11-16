@@ -31,12 +31,6 @@ function storeObject(object) {
                 reject('Invalid DB object, must be an instance of IDBDatabase');
                 return;
             };
-            // Ensure the object is serializable
-            if (!isSerializable(object)) {
-                reject('Object contains non-serializable data');
-                return;
-            };
-
             const transaction = db.transaction('fhir_data', 'readwrite');  // Open the transaction in 'readwrite' mode
             const store = transaction.objectStore('fhir_data');  // Access the 'fhir_data' store
 
@@ -52,17 +46,6 @@ function storeObject(object) {
         });
     });
 }
-function isSerializable(obj) {
-    try {
-        // Check that all parts of the object are serializable
-        JSON.stringify(obj);
-        return true;
-    } catch (e) {
-        console.error('Object not serializable:', e);
-        return false;
-    }
-}
-
 // Retrieve all objects from the 'fhir_data' store
 function getAllObjects() {
     return new Promise((resolve, reject) => {
